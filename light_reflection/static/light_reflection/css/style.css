@@ -1,0 +1,303 @@
+@layer utilities {
+    .text-gradient {
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+        background-image: linear-gradient(to right, #60a5fa, #a855f7);
+    }
+    .bg-glass {
+        background-color: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .shadow-glow {
+        box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2), 0 4px 6px -2px rgba(59, 130, 246, 0.1);
+    }
+    .transition-all-300 {
+        transition: all 0.3s ease-in-out;
+    }
+}
+
+body {
+    background-color: #0F172A;
+    background-image: 
+        radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.canvas-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+#lightCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#particlesCanvas { pointer-events: none; }
+
+.control-panel {
+    position: static;
+    z-index: auto;
+}
+
+.slider-container {
+    position: relative;
+    height: 40px;
+}
+
+.slider-container::before {
+    content: attr(data-min);
+    position: absolute;
+    left: 0;
+    bottom: -20px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.slider-container::after {
+    content: attr(data-max);
+    position: absolute;
+    right: 0;
+    bottom: -20px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(to right, #3B82F6, #8B5CF6);
+    border-radius: 3px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #FFFFFF;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.preset-btn {
+    transition: all 0.2s ease;
+}
+
+.preset-btn:hover {
+    transform: translateY(-2px);
+}
+
+.preset-btn.active {
+    border-color: #3B82F6;
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.formula-container {
+    font-family: 'Times New Roman', serif;
+}
+
+.formula {
+    font-style: italic;
+}
+
+.particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.media-boundary {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.1));
+    z-index: 1;
+}
+
+.normal-line {
+    position: absolute;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.5), transparent);
+    z-index: 1;
+}
+
+.start-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #0F172A;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+
+.start-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.start-screen-content {
+    text-align: center;
+    max-width: 600px;
+    padding: 2rem;
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+}
+
+.start-button {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.start-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+}
+
+.start-button:hover::after {
+    width: 300px;
+    height: 300px;
+}
+
+.start-button:active {
+    transform: scale(0.95);
+}
+
+.loading-bar {
+    width: 0;
+    height: 4px;
+    background: linear-gradient(to right, #3B82F6, #8B5CF6);
+    border-radius: 2px;
+    transition: width 1.5s ease;
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-15px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+.float-animation {
+    animation: float 3s ease-in-out infinite;
+}
+
+.tooltip {
+    position: absolute;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background-color: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 20;
+}
+
+.tooltip.visible {
+    opacity: 1;
+}
+
+.info-card {
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3);
+}
+
+.ray-path {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: dash 2s linear forwards;
+}
+
+@keyframes dash {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.angle-arc {
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    opacity: 0.8;
+}
+
+.angle-text {
+    font-size: 14px;
+    font-weight: 500;
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
+
+.media-label {
+    position: absolute;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.media-label.top {
+    top: 10px;
+    left: 10px;
+}
+
+.media-label.bottom {
+    top: 50%;
+    left: 10px;
+    transform: none;
+}

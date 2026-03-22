@@ -1,0 +1,203 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>光的反射与折射定律交互式演示</title>
+    <!-- DEBUG: STATIC_URL = {{ STATIC_URL }} -->
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- GSAP 动画库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- 自定义 CSS -->
+    <link rel="stylesheet" href="{{ STATIC_URL }}light_reflection/css/style.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#8B5CF6',
+                        dark: '#0F172A',
+                        light: '#E0E7FF',
+                        accent: '#10B981'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-light">
+    <!-- 粒子背景 -->
+    <canvas id="particlesCanvas" class="fixed top-0 left-0 w-full h-full z-0"></canvas>
+
+    <div class="max-w-6xl mx-auto px-6 pt-6 pb-2 space-y-2 relative z-10 text-center">
+        <h1 class="text-4xl font-bold text-white tracking-wide">光学的折射和反射原理演示</h1>
+        <p class="text-gray-300 text-sm md:text-base">探索光线在不同介质界面的传播规律</p>
+    </div>
+
+    <div class="container mx-auto px-6 py-4 flex flex-col gap-6 max-w-6xl relative z-10">
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <!-- 左侧：演示区域 -->
+            <div class="w-full md:col-span-2 md:row-start-1 bg-glass rounded-xl shadow-glow overflow-hidden h-[420px]">
+                <div class="canvas-container h-full">
+                    <canvas id="lightCanvas"></canvas>
+                    <div class="media-boundary" id="mediaBoundary"></div>
+                    <div class="normal-line" id="normalLine"></div>
+                    <div class="media-label top" id="mediaTopLabel">介质 1: 空气 (n₁ = 1.0)</div>
+                    <div class="media-label bottom" id="mediaBottomLabel">介质 2: 水 (n₂ = 1.33)</div>
+                </div>
+            </div>
+            
+            <!-- 右侧：控制面板（上） -->
+            <!-- 控制区作为单独网格项：右列第1行 -->
+            <div class="bg-glass rounded-xl shadow-glow p-5 control-panel md:col-start-3 md:row-start-1 h-[420px] flex flex-col overflow-hidden">
+                    <h2 class="text-lg font-semibold mb-3">参数控制</h2>
+                    <div class="flex-1 overflow-y-auto pr-1">
+                    
+                    <!-- 入射角控制 -->
+                    <div class="mb-5">
+                        <label for="incidentAngle" class="block text-xs font-medium mb-1">入射角 (°)</label>
+                        <div class="slider-container" data-min="0" data-max="90">
+                            <input type="range" id="incidentAngle" min="0" max="90" value="45" class="w-full">
+                        </div>
+                        <div class="mt-1 flex justify-center">
+                            <span id="incidentAngleValue" class="text-xs font-semibold text-blue-400">45°</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 介质折射率控制 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="n1" class="block text-xs font-medium mb-1">介质 1 折射率 (n₁)</label>
+                            <div class="slider-container" data-min="1.0" data-max="2.4">
+                                <input type="range" id="n1" min="1.0" max="2.4" step="0.01" value="1.0" class="w-full">
+                            </div>
+                            <div class="mt-1 flex justify-center">
+                                <span id="n1Value" class="text-xs font-semibold text-blue-400">1.0</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="n2" class="block text-xs font-medium mb-1">介质 2 折射率 (n₂)</label>
+                            <div class="slider-container" data-min="1.0" data-max="2.4">
+                                <input type="range" id="n2" min="1.0" max="2.4" step="0.01" value="1.33" class="w-full">
+                            </div>
+                            <div class="mt-1 flex justify-center">
+                                <span id="n2Value" class="text-xs font-semibold text-purple-400">1.33</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 动画速度控制 -->
+                    <div class="mt-4">
+                        <label for="animationSpeed" class="block text-xs font-medium mb-1">动画速度</label>
+                        <div class="slider-container" data-min="0.001" data-max="0.2">
+                            <input type="range" id="animationSpeed" min="0.001" max="0.2" step="0.001" value="0.01" class="w-full">
+                        </div>
+                        <div class="mt-1 flex justify-center">
+                            <span id="animationSpeedValue" class="text-xs font-semibold text-amber-400">0.01</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 预设介质 -->
+                    <div class="mt-4">
+                        <h3 class="text-xs font-medium mb-2">预设介质</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <button class="preset-btn px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-xs hover:bg-white/10 transition-all-300" data-n1="1.0" data-n2="1.0">空气-空气</button>
+                            <button class="preset-btn px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-xs hover:bg-white/10 transition-all-300" data-n1="1.0" data-n2="1.33">空气-水</button>
+                            <button class="preset-btn px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-xs hover:bg-white/10 transition-all-300" data-n1="1.0" data-n2="1.52">空气-玻璃</button>
+                            <button class="preset-btn px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-xs hover:bg-white/10 transition-all-300" data-n1="1.0" data-n2="2.42">空气-钻石</button>
+                            <button class="preset-btn px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-xs hover:bg-white/10 transition-all-300" data-n1="1.33" data-n2="1.52">水-玻璃</button>
+                            <button class="preset-btn px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-xs hover:bg-white/10 transition-all-300" data-n1="1.52" data-n2="2.42">玻璃-钻石</button>
+                            <button class="preset-btn px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-xs hover:bg-white/10 transition-all-300" data-n1="1.33" data-n2="1.0">水-空气</button>
+                            <button class="preset-btn px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-xs hover:bg-white/10 transition-all-300" data-n1="1.52" data-n2="1.0">玻璃-空气</button>
+                        </div>
+                    </div>
+                    </div>
+                    <!-- 操作按钮 -->
+                    <div class="mt-4 flex flex-wrap gap-3 flex-shrink-0">
+                        <button id="playButton" class="flex items-center gap-2 px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 rounded-lg shadow-md hover:shadow-lg transition-all-300">
+                            <i class="fa fa-play"></i> 播放动画
+                        </button>
+                        <button id="resetButton" class="flex items-center gap-2 px-4 py-2 text-sm bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-700 hover:to-gray-600 rounded-lg shadow-md hover:shadow-lg transition-all-300">
+                            <i class="fa fa-refresh"></i> 重置
+                        </button>
+                        <button id="screenshotButton" class="flex items-center gap-2 px-4 py-2 text-sm bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 rounded-lg shadow-md hover:shadow-lg transition-all-300">
+                            <i class="fa fa-camera"></i> 截图
+                        </button>
+                    </div>
+            </div>
+            
+            <!-- 数据显示区：右列第2行 -->
+            <div class="bg-glass rounded-xl shadow-glow p-5 control-panel md:col-start-3 md:row-start-2 flex-none min-h-[220px]">
+                    <h2 class="text-lg font-semibold mb-3">实时数据</h2>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-300 text-xs">入射角:</span>
+                            <span id="displayIncidentAngle" class="text-base font-semibold text-blue-400">45°</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-300 text-xs">反射角:</span>
+                            <span id="displayReflectionAngle" class="text-base font-semibold text-purple-400">45°</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-300 text-xs">折射角:</span>
+                            <span id="displayRefractionAngle" class="text-base font-semibold text-green-400">32.0°</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-300 text-xs">临界角:</span>
+                            <span id="displayCriticalAngle" class="text-base font-semibold text-amber-400">48.7°</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-300 text-xs">现象:</span>
+                            <span id="displayPhenomenon" class="text-base font-semibold text-teal-400">折射</span>
+                        </div>
+                    </div>
+            </div>
+
+            <!-- 底部：公式和说明（左列第2行，与实时数据顶部对齐） -->
+            <div class="bg-glass rounded-xl shadow-glow p-5 mt-0 w-full md:col-span-2 md:row-start-2 relative z-10 min-h-[220px]">
+            <div class="grid grid-cols-1 gap-6">
+                <div class="formula-container">
+                    <h2 class="text-lg font-semibold mb-3">物理公式</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <h3 class="text-base font-medium">反射定律</h3>
+                            <p class="formula text-lg">θᵢ = θᵣ</p>
+                            <p class="text-xs text-gray-400">入射角等于反射角</p>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-medium">折射定律 (斯奈尔定律)</h3>
+                            <p class="formula text-lg">n₁·sin(θᵢ) = n₂·sin(θₜ)</p>
+                            <p class="text-xs text-gray-400">入射角的正弦与折射角的正弦之比等于两种介质折射率之比</p>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-medium">临界角</h3>
+                            <p class="formula text-lg">sin(θc) = n₂/n₁ (n₁ > n₂)</p>
+                            <p class="text-xs text-gray-400">当光从光密介质射向光疏介质时，折射角为90°时的入射角</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 工具提示 -->
+    <div id="tooltip" class="tooltip">提示信息</div>
+
+    <!-- 自定义 JavaScript -->
+    <script src="{{ STATIC_URL }}light_reflection/js/script.js"></script>
+</body>
+</html>
